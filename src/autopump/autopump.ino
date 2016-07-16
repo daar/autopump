@@ -1,119 +1,221 @@
-// IMPORTANT: Adafruit_TFTLCD LIBRARY MUST BE SPECIFICALLY
-// CONFIGURED FOR EITHER THE TFT SHIELD OR THE BREAKOUT BOARD.
-// SEE RELEVANT COMMENTS IN Adafruit_TFTLCD.h FOR SETUP.
+// include the library code:
+#include <LiquidCrystal.h>
 
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_TFTLCD.h> // Hardware-specific library
+// initialize the library with the numbers of the interface pins
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
-// The control pins for the LCD can be assigned to any digital or
-// analog pins...but we'll use the analog pins as this allows us to
-// double up the pins with the touch screen (see the TFT paint example).
-#define LCD_CS A3 // Chip Select goes to Analog 3
-#define LCD_CD A2 // Command/Data goes to Analog 2
-#define LCD_WR A1 // LCD Write goes to Analog 1
-#define LCD_RD A0 // LCD Read goes to Analog 0
+#define BUTTON_1 2      //pin of pushbutton 1
+#define BUTTON_2 3      //pin of pushbutton 2
 
-#define LCD_RESET A4 // Can alternately just connect to Arduino's reset pin
+#define VALVE_1 6       //pin of valve 1
+#define VALVE_2 7       //pin of valve 2
 
-// When using the BREAKOUT BOARD only, use these 8 data lines to the LCD:
-// For the Arduino Uno, Duemilanove, Diecimila, etc.:
-//   D0 connects to digital pin 8  (Notice these are
-//   D1 connects to digital pin 9   NOT in order!)
-//   D2 connects to digital pin 2
-//   D3 connects to digital pin 3
-//   D4 connects to digital pin 4
-//   D5 connects to digital pin 5
-//   D6 connects to digital pin 6
-//   D7 connects to digital pin 7
-// For the Arduino Mega, use digital pins 22 through 29
-// (on the 2-row header at the end of the board).
+#define PRESELECTMAX 2  //number of presets
 
-// Assign human-readable names to some common 16-bit color values:
-#define  BLACK   0x0000
-#define BLUE    0x001F
-#define RED     0xF800
-#define GREEN   0x07E0
-#define CYAN    0x07FF
-#define MAGENTA 0xF81F
-#define YELLOW  0xFFE0
-#define WHITE   0xFFFF
+#define RESETTIME 3 * 60 * 1000  //time to goto standby
 
-Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
-// If using the shield, all control and data lines are fixed, and
-// a simpler declaration can optionally be used:
-// Adafruit_TFTLCD tft;
+int stepnr = 0;
+double zeropressure = 0;
+double pressure = 0;
+int preselectnr = 0;
+double preselectpressure = 0;
+double pressuretol = 0.05;  //tollerance of pressure
+unsigned long time = 0;
 
-void setup(void) {
+int preselectval[PRESELECTMAX] = {
+  0.8, 0.6
+};
+char* preselectstr[PRESELECTMAX] = {
+  "Volwassenen", "Jeugd"
+};
+
+void setup() {
   Serial.begin(9600);
-  Serial.println(F("TFT LCD test"));
 
-#ifdef USE_ADAFRUIT_SHIELD_PINOUT
-  Serial.println(F("Using Adafruit 2.8\" TFT Arduino Shield Pinout"));
-#else
-  Serial.println(F("Using Adafruit 2.8\" TFT Breakout Board Pinout"));
-#endif
+  //pushbutton 1 and 2
+  pinMode(BUTTON_1, INPUT);
+  pinMode(BUTTON_2, INPUT);
 
-  Serial.print("TFT size is "); Serial.print(tft.width()); Serial.print("x"); Serial.println(tft.height());
+  //valve 1 and 2
+  pinMode(VALVE_1, OUTPUT);
+  pinMode(VALVE_2, OUTPUT);
 
-  tft.reset();
+  //indication LED
+  pinMode(13, OUTPUT);
+}
 
-  uint16_t identifier = tft.readID();
+void readpressure() {
+  int raw_pressure = analogRead(1);
+  pressure = 0.006388082 * raw_pressure - 0.653500811;
+  Serial.println(pressure, DEC);
+}
 
-  if (identifier == 0x9325) {
-    Serial.println(F("Found ILI9325 LCD driver"));
-  } else if (identifier == 0x9328) {
-    Serial.println(F("Found ILI9328 LCD driver"));
-  } else if (identifier == 0x7575) {
-    Serial.println(F("Found HX8347G LCD driver"));
-  } else if (identifier == 0x9341) {
-    Serial.println(F("Found ILI9341 LCD driver"));
-  } else if (identifier == 0x8357) {
-    Serial.println(F("Found HX8357D LCD driver"));
-  } else {
-    Serial.print(F("Unknown LCD driver chip: "));
-    Serial.println(identifier, HEX);
-    Serial.println(F("If using the Adafruit 2.8\" TFT Arduino shield, the line:"));
-    Serial.println(F("  #define USE_ADAFRUIT_SHIELD_PINOUT"));
-    Serial.println(F("should appear in the library header (Adafruit_TFT.h)."));
-    Serial.println(F("If using the breakout board, it should NOT be #defined!"));
-    Serial.println(F("Also if using the breakout, double-check that all wiring"));
-    Serial.println(F("matches the tutorial."));
-    return;
+void printdisplay() {
+
+  char line1[16];
+  char line2[16];
+
+  switch (stepnr) {
+  case 0:
+    //standby, no display
+
+    strncpy(line1, "", 16);
+    strncpy(line2, "", 16);
+
+    break;
+
+  case 1:
+    //display preset
+
+    sprintf(line1, "preset: %s", preselectstr[preselectnr]);
+
+    char temp[16];
+    dtostrf(preselectval[preselectnr], 6, 3, temp);
+    sprintf(line2, "target: %s bar", temp);
+
+    break;
+
+  case 2:
+
+    //print the actual pressure
+    char temp[16];
+    dtostrf(pressure - zeropressure, 6, 3, temp);
+    sprintf(line1, "actual: %s bar", temp);
+
+    //print the target pressure
+    char temp[16];
+    dtostrf(preselectval[preselectnr], 6, 3, temp);
+    sprintf(line2, "target: %s bar", temp);
+
+
+    break;
+
+  case 3:
+    //waiting for restart or reset
+
+    strncpy(line1, "Btn 1 for repeat", 16);
+    strncpy(line2, "Btn 2 for reset", 16);
+
+    break;
   }
 
-  tft.begin(identifier);
+  lcd.print(line1);
+  lcd.print(line2);
 }
 
-void loop(void) {
-  show_display();
-  delay(1000);
+void loop() {
+  //read button 1 state
+  int button1 = digitalRead(BUTTON_1);
+  Serial.print(button1, DEC);
+
+  //read button 2 state
+  int button2 = digitalRead(BUTTON_2);
+  Serial.print(button2, DEC);
+
+  Serial.print(' ');
+
+  //read pressure
+  readpressure();
+
+  //determine preselect pressure
+  preselectpressure = preselectval[preselectnr];
+
+  //close deflate valve
+  digitalWrite(VALVE_1, LOW);
+
+  //close inflate valve
+  digitalWrite(VALVE_2, LOW);
+
+  switch (stepnr) {
+
+    //standby
+  case 0:
+    //store zero pressure
+    zeropressure = pressure;
+
+    if (button1 || button2) {
+      stepnr = 1;
+    }
+
+    break;
+
+    //pre-select set pressure
+  case 1:
+
+    //if both buttons pressed then start
+    if (button1 && button2) {
+      stepnr = 2;
+      time = millis();
+    }
+
+    //only one button pressed means change preselect
+    if (button1 || button2) {
+      preselectnr = preselectnr + 1;
+      if (preselectnr >= PRESELECTMAX) {
+        preselectnr = 0;
+      }
+    }
+
+    printdisplay();
+
+    //after resettime has elapsed goto standby
+    if (millis() - time >= RESETTIME) {
+
+      stepnr = 0;
+    }
+
+    break;
+
+    //start adjusting pressure
+  case 2:
+    //deflate
+    while (pressure - zeropressure > preselectpressure + pressuretol) {
+
+      digitalWrite(VALVE_1, HIGH);
+      readpressure();
+      printdisplay();
+    }
+
+    //inflate
+    while (pressure - zeropressure < preselectpressure - pressuretol) {
+
+      digitalWrite(VALVE_2, HIGH);
+      readpressure();
+      printdisplay();
+    }
+
+    stepnr = 3;
+    time = millis();
+
+    break;
+
+    //wait for restart
+  case 3:
+
+    printdisplay();
+
+    //if button 1 pressed than restart the sequence
+    if (button1) {
+      stepnr = 2;
+      time = millis();
+    }
+    else if (button2) {
+      stepnr = 1;
+      time = millis();
+    }
+
+    //after resettime has elapsed goto standby
+    if (millis() - time >= RESETTIME) {
+
+      stepnr = 0;
+    }
+
+    break;
+  }
 }
 
-void print_value(char *text, float value) {
 
-  char str[80];
-  char str_temp[6];
 
-  dtostrf(value, 6, 3, str_temp);
-  sprintf(str, text, str_temp);
 
-  tft.println(str);
-}
-
-unsigned long show_display() {
-
-  tft.setRotation(1);
-
-  //tft.fillScreen(BLACK);
-  tft.setTextColor(WHITE);
-
-  tft.setCursor(0, 0);
-  tft.setTextSize(2);
-  print_value("Act pressure = %s bar", 3.141592653589793238);
-
-  tft.setCursor(0, 20);
-  tft.setTextSize(2);
-  print_value("Set pressure = %s bar", 3.141592653589793238);
-}
 
 
