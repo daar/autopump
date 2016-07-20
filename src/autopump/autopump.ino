@@ -1,15 +1,17 @@
 // include the library code:
 #include <LiquidCrystal.h>
 
-#define BUTTON_1 2      			//pin of pushbutton 1
-#define BUTTON_2 3      			//pin of pushbutton 2
+#define DISPLAYDAMP 4         //damping factor for display
+
+#define BUTTON_1 8            //pin of pushbutton 1
+#define BUTTON_2 9      			//pin of pushbutton 2
 
 #define VALVE_1 6       			//pin of valve 1
 #define VALVE_2 7       			//pin of valve 2
 
 #define PRESELECTMAX 3  			//number of presets
 
-#define RESETTIME 3 * 60 * 1000  	//time to goto standby
+#define RESETTIME 0.25 * 60 * 1000  	//time to goto standby
 #define DEFLATETIME 10 * 1000    	//max time needed for deflation
 #define INFLATETIME 10 * 1000    	//max time needed for inflation
 
@@ -21,12 +23,12 @@ double pressuretol = 0.05;  //tollerance of pressure
 
 unsigned long stime = 0;
 
-int preselectnr = 0;
+int preselectnr = 1;
 double preselectpressure = 0;
-int preselectval[PRESELECTMAX] = {
+double preselectval[PRESELECTMAX] = {
   0.8, 0.7, 0.6
 };
-char* preselectstr[PRESELECTMAX] = {
+char* preselectstr[] = {
   "Senioren", "Junioren", "Pupillen"
 };
 
@@ -46,9 +48,7 @@ void setup() {
 
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
-
-  //turn off display
-  lcd.noDisplay();
+  lcd.display();
 }
 
 void readpressure() {
@@ -63,7 +63,10 @@ void printdisplay() {
   char line2[16];
   char temp[16];
 
+  lcd.clear();
+
   switch (stepnr) {
+
     case 0:
 
       //standby, no display
@@ -74,45 +77,60 @@ void printdisplay() {
 
       //display preset
 
+      //doesn't work, driving me nuts!!!
       sprintf(line1, "preset: %s", preselectstr[preselectnr]);
 
-      dtostrf(preselectval[preselectnr], 6, 3, temp);
-      sprintf(line2, "target: %s bar", temp);
+      dtostrf(preselectpressure, 5, 3, temp);
+      sprintf(line2, "target: %sBar", temp);
 
-      lcd.print(line1);
+      lcd.print("preset: ");
+      lcd.print(preselectstr[preselectnr]);
+
+      //lcd.print(line1);
+      lcd.setCursor(0, 1);
       lcd.print(line2);
 
       break;
 
     case 2:
+      {
+        double corrpressure = pressure - zeropressure;
+        //print the actual pressure
+        if (corrpressure < 0) {
+          lcd.print("actual:");
+        } else {
+          lcd.print("actual: ");
+        }
+        dtostrf(corrpressure, 5, 3, temp);
+        sprintf(line1, "actual: %sBar", temp);
 
-      //print the actual pressure
-      dtostrf(pressure - zeropressure, 6, 3, temp);
-      sprintf(line1, "actual: %s bar", temp);
+        lcd.print(temp);
+        lcd.print("Bar");
 
-      //print the target pressure
-      dtostrf(preselectval[preselectnr], 6, 3, temp);
-      sprintf(line2, "target: %s bar", temp);
+        //print the target pressure
+        dtostrf(preselectval[preselectnr], 5, 3, temp);
+        sprintf(line2, "target: %sBar", temp);
 
-      lcd.print(line1);
-      lcd.print(line2);
-
+        //lcd.print(line1);
+        lcd.setCursor(0, 1);
+        lcd.print(line2);
+      }
       break;
 
     case 3:
       //waiting for restart or reset
-
-      strncpy(line1, "Btn 1 for repeat", 16);
-      strncpy(line2, "Btn 2 for reset", 16);
-
-      lcd.print(line1);
-      lcd.print(line2);
+      lcd.print("Btn 1 for repeat");
+      lcd.setCursor(0, 1);
+      lcd.print("Btn 2 for reset");
 
       break;
   }
 }
 
 void loop() {
+  Serial.print(stepnr);
+  Serial.print(' ');
+
   //read button 1 state
   int button1 = digitalRead(BUTTON_1);
   Serial.print(button1, DEC);
@@ -145,32 +163,38 @@ void loop() {
       if (button1 || button2) {
         stepnr = 1;
 
-        // turn on the display:
-        lcd.display();
-
         stime = millis();
       }
+
+      printdisplay();
 
       break;
 
     //pre-select set pressure
     case 1:
 
-      //allow both buttons to be pressed
-      delay(1000);
-
-      //if both buttons pressed then start
-      if (button1 && button2) {
-        stepnr = 2;
-        stime = millis();
-      }
-
-      //only one button pressed means change preselect
+      //one button pressed means change preselect
       if (button1 || button2) {
-        preselectnr = preselectnr + 1;
-        if (preselectnr >= PRESELECTMAX) {
-          preselectnr = 0;
+
+        //allow both buttons to be pressed
+        delay(1000);
+
+        //recheck buttons
+        button1 = digitalRead(BUTTON_1);
+        button2 = digitalRead(BUTTON_2);
+
+        //if both buttons pressed then start
+        if (button1 && button2) {
+          stepnr = 2;
+        } else
+        {
+
+          preselectnr = preselectnr + 1;
+          if (preselectnr >= PRESELECTMAX) {
+            preselectnr = 0;
+          }
         }
+        stime = millis();
       }
 
       printdisplay();
@@ -179,38 +203,52 @@ void loop() {
       if (millis() - stime >= RESETTIME) {
 
         stepnr = 0;
-
-        //turn off display
-        lcd.noDisplay();
       }
 
       break;
 
     //start adjusting pressure
     case 2:
-      //deflate
-      stime = millis();
-      while (pressure - zeropressure > preselectpressure + pressuretol && millis() - stime < DEFLATETIME ) {
+      {
+        int i = 1;
 
-        digitalWrite(VALVE_1, HIGH);
-        readpressure();
-        printdisplay();
+        //deflate
+        stime = millis();
+        while (pressure - zeropressure > preselectpressure + pressuretol && millis() - stime < DEFLATETIME ) {
+
+          digitalWrite(VALVE_1, HIGH);
+          readpressure();
+
+          if (i == DISPLAYDAMP) {
+            printdisplay();
+          }
+          i = i + 1;
+          if (i > DISPLAYDAMP) {
+            i = 1;
+          }
+        }
+
+        //wait for pressure to settle
+        delay(1000);
+
+        //inflate
+        while (pressure - zeropressure < preselectpressure - pressuretol && millis() - stime < INFLATETIME) {
+
+          digitalWrite(VALVE_2, HIGH);
+          readpressure();
+
+          if (i == DISPLAYDAMP) {
+            printdisplay();
+          }
+          i = i + 1;
+          if (i > DISPLAYDAMP) {
+            i = 1;
+          }
+        }
+
+        stepnr = 3;
+        stime = millis();
       }
-
-      //wait for pressure to settle
-      delay(1000);
-
-      //inflate
-      while (pressure - zeropressure < preselectpressure - pressuretol && millis() - stime < INFLATETIME) {
-
-        digitalWrite(VALVE_2, HIGH);
-        readpressure();
-        printdisplay();
-      }
-
-      stepnr = 3;
-      stime = millis();
-
       break;
 
     //wait for restart or reset
@@ -232,9 +270,6 @@ void loop() {
       if (millis() - stime >= RESETTIME) {
 
         stepnr = 0;
-
-        //turn off display
-        lcd.noDisplay();
       }
 
       break;
