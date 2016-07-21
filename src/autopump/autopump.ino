@@ -1,35 +1,36 @@
 // include the library code:
 #include <LiquidCrystal.h>
 
-#define DISPLAYDAMP 4         //damping factor for display
+#define DISPLAYTIME 500                 //refresh rate in ms for the display
 
-#define BUTTON_1 8            //pin of pushbutton 1
-#define BUTTON_2 9      			//pin of pushbutton 2
+#define BUTTON_1 8                      //pin of pushbutton 1
+#define BUTTON_2 9      	              //pin of pushbutton 2
 
-#define VALVE_1 6       			//pin of valve 1
-#define VALVE_2 7       			//pin of valve 2
+#define VALVE_1 6       		            //pin of valve 1
+#define VALVE_2 7       		            //pin of valve 2
 
-#define PRESELECTMAX 3  			//number of presets
+#define PRESELECTMAX 3  		            //number of presets
 
-#define RESETTIME 0.25 * 60 * 1000  	//time to goto standby
-#define DEFLATETIME 10 * 1000    	//max time needed for deflation
-#define INFLATETIME 10 * 1000    	//max time needed for inflation
+#define RESETTIME 3 * 60 * 1000  	      //time to goto standby in ms
+#define DEFLATETIME 10 * 1000    	      //max time needed for deflation in ms
+#define INFLATETIME 10 * 1000    	      //max time needed for inflation in ms
 
 int stepnr = 0;
 
 double zeropressure = 0;
 double pressure = 0;
-double pressuretol = 0.05;  //tollerance of pressure
+double pressuretol = 0.05;              //tolerance of pressure
 
-unsigned long stime = 0;
+unsigned long stime = 0;                //step timer
+unsigned long dtime = 0;                //display timer
 
 int preselectnr = 1;
 double preselectpressure = 0;
 double preselectval[PRESELECTMAX] = {
-  0.8, 0.7, 0.6
+  0.6, 0.7, 0.8
 };
 char* preselectstr[] = {
-  "Senioren", "Junioren", "Pupillen"
+  "Pupillen", "Junioren", "Senioren"
 };
 
 // initialize the library with the numbers of the interface pins
@@ -63,6 +64,12 @@ void printdisplay() {
   char line2[16];
   char temp[16];
 
+  if (millis() - dtime < DISPLAYTIME) {
+    return;
+  }
+
+  dtime = millis();
+
   lcd.clear();
 
   switch (stepnr) {
@@ -76,9 +83,6 @@ void printdisplay() {
     case 1:
 
       //display preset
-
-      //doesn't work, driving me nuts!!!
-      sprintf(line1, "preset: %s", preselectstr[preselectnr]);
 
       dtostrf(preselectpressure, 5, 3, temp);
       sprintf(line2, "target: %sBar", temp);
@@ -102,7 +106,6 @@ void printdisplay() {
           lcd.print("actual: ");
         }
         dtostrf(corrpressure, 5, 3, temp);
-        sprintf(line1, "actual: %sBar", temp);
 
         lcd.print(temp);
         lcd.print("Bar");
@@ -124,6 +127,30 @@ void printdisplay() {
       lcd.print("Btn 2 for reset");
 
       break;
+  }
+}
+
+void deflate() {
+
+  stime = millis();
+  while (pressure - zeropressure > preselectpressure + pressuretol && millis() - stime < DEFLATETIME ) {
+
+    digitalWrite(VALVE_1, HIGH);
+    readpressure();
+
+    printdisplay();
+  }
+}
+
+void inflate() {
+
+  stime = millis();
+  while (pressure - zeropressure < preselectpressure - pressuretol && millis() - stime < INFLATETIME) {
+
+    digitalWrite(VALVE_2, HIGH);
+    readpressure();
+
+    printdisplay();
   }
 }
 
@@ -210,41 +237,18 @@ void loop() {
     //start adjusting pressure
     case 2:
       {
-        int i = 1;
 
-        //deflate
-        stime = millis();
-        while (pressure - zeropressure > preselectpressure + pressuretol && millis() - stime < DEFLATETIME ) {
+        //run the deflate and inflate cycles two times each
+        //in between cycles pause 1sec to stabilize the measurement
 
-          digitalWrite(VALVE_1, HIGH);
-          readpressure();
-
-          if (i == DISPLAYDAMP) {
-            printdisplay();
-          }
-          i = i + 1;
-          if (i > DISPLAYDAMP) {
-            i = 1;
-          }
-        }
-
-        //wait for pressure to settle
+        deflate();
         delay(1000);
+        inflate();
+        delay(1000);
+        deflate();
+        delay(1000);
+        inflate();
 
-        //inflate
-        while (pressure - zeropressure < preselectpressure - pressuretol && millis() - stime < INFLATETIME) {
-
-          digitalWrite(VALVE_2, HIGH);
-          readpressure();
-
-          if (i == DISPLAYDAMP) {
-            printdisplay();
-          }
-          i = i + 1;
-          if (i > DISPLAYDAMP) {
-            i = 1;
-          }
-        }
 
         stepnr = 3;
         stime = millis();
@@ -256,7 +260,7 @@ void loop() {
 
       printdisplay();
 
-      //if button 1 pressed than restart the sequence
+      //if button 1 pressed than restart the same sequence
       if (button1) {
         stepnr = 2;
         stime = millis();
