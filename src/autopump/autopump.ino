@@ -4,18 +4,18 @@
 #define DISPLAYTIME 500                 //refresh rate in ms for the display
 
 #define BUTTON_1 8                      //pin of pushbutton 1
-#define BUTTON_2 9      	              //pin of pushbutton 2
+#define BUTTON_2 9                      //pin of pushbutton 2
 
-#define VALVE_1 6       		            //pin of valve 1
-#define VALVE_2 7       		            //pin of valve 2
+#define VALVE_1 6                       //pin of valve 1
+#define VALVE_2 7                       //pin of valve 2
 
 #define BACKLIGHT 10                    //pin of backlight control
 
-#define PRESELECTMAX 3  		            //number of presets
+#define PRESELECTMAX 3                  //number of presets
 
-#define RESETTIME 180000  	            //time to goto standby in ms
-#define DEFLATETIME 10000    	          //max time needed for deflation in ms
-#define INFLATETIME 10000    	          //max time needed for inflation in ms
+#define RESETTIME 60000                 //time to goto standby in ms
+#define DEFLATETIME 10000               //max time needed for deflation in ms
+#define INFLATETIME 10000               //max time needed for inflation in ms
 
 int stepnr = 0;
 
@@ -26,7 +26,7 @@ double pressuretol = 0.01;              //tolerance of pressure
 unsigned long stime = 0;                //step timer
 unsigned long dtime = 0;                //display timer
 
-int preselectnr = 1;
+int preselectnr = 0;
 double preselectpressure = 0;
 double preselectval[PRESELECTMAX] = {
   0.8, 0.9, 1.0
@@ -209,6 +209,10 @@ void loop() {
         if (button1 || button2) {
           stepnr = 1;
 
+          //allow the buttons to be unpressed, otherwise we already select
+          //the next preset
+          delay(1000);
+          
           stime = millis();
         }
 
