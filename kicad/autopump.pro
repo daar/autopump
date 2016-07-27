@@ -1,4 +1,4 @@
-update=25-7-2016 21:30:45
+update=27-7-2016 22:10:02
 version=1
 last_client=kicad
 [pcbnew]
@@ -25,7 +25,7 @@ version=1
 NetIExt=net
 [eeschema]
 version=1
-LibDir=
+LibDir=C:/Users/Sarah/Documents/KiCadlibs
 [eeschema/libraries]
 LibName1=autopump-rescue
 LibName2=power
@@ -57,5 +57,6 @@ LibName27=opto
 LibName28=atmel
 LibName29=contrib
 LibName30=valves
+LibName31=C:/Users/Sarah/Documents/KiCadlibs/Arduino_Shield_Modules_for_KiCad_V3/arduino_shieldsNCL
 [general]
 version=1
