@@ -11,18 +11,18 @@
     (via_costs 50)
     (plane_via_costs 5)
     (start_ripup_costs 100)
-    (start_pass_no 261)
+    (start_pass_no 175)
     (layer_rule F.Cu
-      (active on)
-      (preferred_direction vertical)
-      (preferred_direction_trace_costs 1.0)
-      (against_preferred_direction_trace_costs 2.0)
-    )
-    (layer_rule B.Cu
       (active on)
       (preferred_direction horizontal)
       (preferred_direction_trace_costs 1.0)
-      (against_preferred_direction_trace_costs 2.0)
+      (against_preferred_direction_trace_costs 2.3)
+    )
+    (layer_rule B.Cu
+      (active on)
+      (preferred_direction vertical)
+      (preferred_direction_trace_costs 1.0)
+      (against_preferred_direction_trace_costs 1.8)
     )
   )
   (rule
@@ -33,6 +33,7 @@
     (clear 75.0 (type smd_smd))
     (clear 400.2 (type smd_"Power))
     (clear 400.2 (type "kicad_default"_"Power))
+    (clear 400.2 (type "Power_12V"))
   )
   (padstack "Via[0-1]_600:400_um"
     (shape
@@ -90,11 +91,9 @@
     )
   )
   (class "kicad_default"
-    +5V GND "Net-(DS1-Pad3)" "Net-(DS1-Pad4)" "Net-(DS1-Pad6)" "Net-(DS1-Pad7)" "Net-(DS1-Pad8)" "Net-(DS1-Pad9)"
-    "Net-(DS1-Pad10)" "Net-(DS1-Pad11)" "Net-(DS1-Pad12)" "Net-(DS1-Pad13)" "Net-(DS1-Pad14)" "Net-(DS1-Pad15)" "Net-(P2-Pad2)" "Net-(P3-Pad2)"
-    "Net-(P3-Pad3)" "Net-(P3-Pad4)" "Net-(P3-Pad5)" "Net-(R1-Pad1)" "Net-(R2-Pad1)" "Net-(R3-Pad1)" "Net-(SHIELD1-PadAD5)" "Net-(SHIELD1-PadAD4)"
-    "Net-(SHIELD1-PadAD3)" "Net-(SHIELD1-PadAD0)" "Net-(SHIELD1-PadAD2)" "Net-(SHIELD1-PadV_IN)" "Net-(SHIELD1-PadGND2)" "Net-(SHIELD1-PadGND1)" "Net-(SHIELD1-Pad3V3)" "Net-(SHIELD1-PadRST)"
-    "Net-(SHIELD1-Pad0)" "Net-(SHIELD1-Pad1)" "Net-(SHIELD1-Pad13)" "Net-(SHIELD1-PadGND3)" "Net-(SHIELD1-PadAREF)" "Net-(SHIELD1-Pad5V)"
+    5V GND "Net-(DS1-Pad3)" "Net-(DS1-Pad4)" "Net-(DS1-Pad6)" "Net-(DS1-Pad11)" "Net-(DS1-Pad12)" "Net-(DS1-Pad13)"
+    "Net-(DS1-Pad14)" "Net-(DS1-Pad15)" "Net-(P2-Pad2)" "Net-(P3-Pad2)" "Net-(P3-Pad3)" "Net-(R1-Pad1)" "Net-(R2-Pad1)" "Net-(R3-Pad1)"
+    "Net-(BT1-Pad1)"
     (clearance_class "kicad_default")
     (via_rule kicad_default)
     (rule
@@ -105,7 +104,6 @@
     )
   )
   (class "Power 12V"
-    +12V
     (clearance_class "Power 12V")
     (via_rule Power 12V)
     (rule

@@ -1,4 +1,4 @@
-update=27-7-2016 22:10:02
+update=28-7-2016 07:23:19
 version=1
 last_client=kicad
 [pcbnew]
@@ -60,3 +60,13 @@ LibName30=valves
 LibName31=C:/Users/Sarah/Documents/KiCadlibs/Arduino_Shield_Modules_for_KiCad_V3/arduino_shieldsNCL
 [general]
 version=1
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
