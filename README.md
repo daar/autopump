@@ -1,3 +1,5 @@
 Autopump is a small project to create an Arduino powered automatic air compressor controller. The controller has an LCD screen and two button interface. Two automatic valves and a pressure transmitter make it possible to achieve accurate control on the target pressure. The original purpose to build such a controller was to make it possible to automatically pump soccer balls, although the controller of course can be used for any purpose.
 
-I will be posting the code including a schematic and PCB layout for the electronics as well as some pictures here later. All sourcecode is released under GPL2 license and the hardware is released under the OSHW.
+![Alt text](/kicad/autopump_pcb.png?raw=true "Autopump shield: PCB rendering from KiCad")
+
+All sourcecode is released under GPL2 license and the hardware is released under the OSHW.
