@@ -12,8 +12,8 @@ Contents:
    :maxdepth: 2
 
    getting_started
+   controller
    hardware
-   arduino_uno
    software
    kicad
    operation
