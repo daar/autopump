@@ -21,6 +21,8 @@
 
 #define DISPLAYTIME 500                 //refresh rate in ms for the display
 
+#define PRESSURE_INPUT 1                //analog input of the pressure transducer
+
 #define BUTTON_1 8                      //pin of pushbutton 1
 #define BUTTON_2 9                      //pin of pushbutton 2
 
@@ -81,9 +83,16 @@ void setup() {
   lcd.display();
 }
 
+/*
+ * This function converts the analog signal of the pressure transducer
+ * to a pressure. The unit is in bar(g).
+ */
 void readpressure() {
-  int raw_pressure = analogRead(1);
+  int raw_pressure = analogRead(PRESSURE_INPUT);
   pressure = 0.006388082 * raw_pressure - 0.653500811;
+  
+  Serial.print(zeropressure, DEC);
+  Serial.print(" ");
   Serial.println(pressure, DEC);
 }
 
@@ -282,6 +291,7 @@ void loop() {
         //run the deflate and inflate cycles two times each
         //in between cycles pause 1sec to stabilize the measurement
 
+        delay(1000);
         deflate();
         delay(1000);
         inflate();
