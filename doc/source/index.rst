@@ -9,20 +9,22 @@ Welcome to Autopump's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    getting_started
    controller
    hardware
    software
-   kicad
+   electrical
+   construction
    operation
+   finalremarks
 
 Autopump is a small project to create an Arduino powered automatic compressed air controller. The controller has an LCD screen and two button interface. Two automatic valves and a pressure transmitter make it possible to achieve accurate control on the target pressure. The original purpose to build such a controller was to make it possible to automatically pump soccer balls, although the controller of course can be used for any purpose.
 
 All sourcecode is released under GPL2 license and the hardware is released under the OSHW.
 
-This document describes all the steps that needed to be taken to finish this project. New skills were learned (both in software as in hardware) to be able to complete this project. I have tried to make a comprehensive desicription, however, if you find details are missing, you can contact me via `email`_ with your questions.
+This document describes all the steps that needed to be taken to finish this project. Different skills are needed (software, hardware and electronics) to be able to complete this project. I have tried to make a comprehensive desicription, however, if you find details are missing, you can contact me via `email`_ with your questions. I hope people get inspired by this project as I did and try and persevere to fabricate their own projects.
 
 .. _email: dhkblaszyk@gmail.com
    

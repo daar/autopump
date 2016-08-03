@@ -1,4 +1,4 @@
-update=2-8-2016 12:46:13
+update=2-8-2016 19:50:41
 version=1
 last_client=kicad
 [pcbnew]
@@ -58,8 +58,6 @@ LibName28=atmel
 LibName29=contrib
 LibName30=valves
 LibName31=C:/Users/Sarah/Documents/KiCadlibs/Arduino_Shield_Modules_for_KiCad_V3/arduino_shieldsNCL
-[general]
-version=1
 [schematic_editor]
 version=1
 PageLayoutDescrFile=
@@ -70,3 +68,5 @@ NetFmtName=
 SpiceForceRefPrefix=0
 SpiceUseNetNumbers=0
 LabSize=60
+[general]
+version=1
